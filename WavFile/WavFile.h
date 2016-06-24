@@ -100,7 +100,7 @@ class WavFile {
                                                              DifferentBitsPerSampleException);
         void        addMonoFrom(WavFile& otherFile) throw (NotMonoException);
 
-        void        save();
+        void        save(const std::string& path = "");
         void        saveAs(const std::string& fileName);
 
         void overVoice(WavFile & otherFile, double attack, double release, double silence, double threshold, double ratio);
@@ -132,7 +132,7 @@ class WavFile {
 
         void _overVoiceInt16(WavFile& otherFile, double attack, double release, double silence, Decibel<int16_t> threshold, Decibel<int16_t> ratio);
 
-        void _saveInt16();
+        void _saveInt16(const std::string& path);
 
         bool _dataInt16End(std::vector < std::vector < int16_t >::iterator > iterators) {
             bool result = true;

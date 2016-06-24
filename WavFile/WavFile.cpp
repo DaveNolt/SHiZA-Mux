@@ -1,5 +1,6 @@
 #include "WavFile.h"
 #include <iostream>
+#include <algorithm>
 #include <fstream>
 
 
@@ -472,14 +473,14 @@ void WavFile::_addMonoFlt32Data(WavFile& otherFile) {
     }
 }
 
-void WavFile::save() {
-    _saveInt16();           //TODO: make this shit work with all types
+void WavFile::save(const std::string& path) {
+    _saveInt16(path);           //TODO: make this shit work with all types
 }
 
-void WavFile::_saveInt16(){
+void WavFile::_saveInt16(const std::string& path){
     std::ofstream ofs;
 
-    ofs.open("lol3.wav", std::ios::out|std::ios::binary|std::ios::trunc);
+    ofs.open(path.empty() ? _filePath : path, std::ios::out|std::ios::binary|std::ios::trunc);
 
 //    if (!ofs){
 //        throw FileNotExistException(std::string("File '") + _filePath +
@@ -523,11 +524,12 @@ void WavFile::overVoice(WavFile & otherFile, double attack, double release, doub
 
 void WavFile::_overVoiceInt16(WavFile& otherFile, double attack, double release, double silence, Decibel<int16_t> threshold, Decibel<int16_t> ratio){
     typedef unsigned long long ultInt;
+    typedef std::vector<int16_t>::iterator iter_type;
 
     Decibel< int16_t > tmp;
 
-    std::vector< std::vector<int16_t>::iterator > iteratorsOrig;
-    std::vector< std::vector<int16_t>::iterator > iteratorsVoice;
+    std::vector< iter_type > iteratorsOrig;
+    std::vector< iter_type > iteratorsVoice;
 
     for (int i = 0; i < _header.numChannels; i++)
         iteratorsOrig.push_back(_int16_data.at(i).begin());
@@ -547,11 +549,13 @@ void WavFile::_overVoiceInt16(WavFile& otherFile, double attack, double release,
     ultInt sl = 0;
     double envelope = 0.;
 
+    ultInt COUNT = 0;
 
     while (iteratorsOrig.at(0) != _int16_data.at(0).end() && iteratorsVoice.at(0) != otherFile._int16_data.at(0).end()){
         mux = 0;
+        COUNT++;
         for (unsigned i = 0; i < iteratorsVoice.size(); i++){
-            mux += *(iteratorsVoice.at(i));
+            mux = std::max(mux, *( iteratorsVoice.at(i) ) );
         }
 
         tmp.calculateRatio(mux / iteratorsVoice.size());
@@ -565,7 +569,7 @@ void WavFile::_overVoiceInt16(WavFile& otherFile, double attack, double release,
                 envelope = ratio.getVal();
             }
         }
-        else if (sl < (ultInt)(silence*_header.sampleRate) + offset && envelope != 0){
+        else if (sl < (ultInt)(silence*_header.sampleRate) && envelope != 0){
             if (envelope < ratio.getVal()){
                 envelope += ratio.getVal()/(attack*_header.sampleRate);
             }
@@ -576,6 +580,25 @@ void WavFile::_overVoiceInt16(WavFile& otherFile, double attack, double release,
             sl++;
         }
         else{
+            if (sl == (ultInt)(silence*_header.sampleRate)){
+                for (unsigned i = 0; i < iteratorsOrig.size(); i++){
+                    std::reverse_iterator< iter_type > rit(iteratorsOrig.at(i));
+                    for (ultInt j = 0; j < silence*_header.sampleRate; j++){
+                        rit++;
+                        iteratorsOrig.at(i) = rit.base();
+                        *(iteratorsOrig.at(i)) = *(iteratorsOrig.at(i)) - Decibel<short>(-15);
+                    }
+                }
+
+                for (unsigned i = 0; i < iteratorsVoice.size(); i++){
+                    std::reverse_iterator < iter_type > rit(iteratorsVoice.at(i));
+                    for (ultInt j = 0; j < silence*_header.sampleRate; j++)
+                    rit++;
+                    iteratorsVoice.at(i) = rit.base();
+                }
+                sl++;
+            }
+
             if (envelope > 0) envelope -= ratio.getVal()/(release*_header.sampleRate);
             else envelope = 0;
         }

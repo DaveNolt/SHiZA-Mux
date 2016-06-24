@@ -18,8 +18,8 @@ template<typename T>
 class Decibel{
 
 public:
-    Decibel() : value(0) {}
-    Decibel(double val) : value(val) {threshold = calculateThreshold();}
+    Decibel() : value(0), threshold( calculateThreshold() ) {}
+    Decibel(double val) : value(val), threshold( calculateThreshold() ){}
 
     void calculateRatio(T srcVal);
     void calculateRatio(T refVal, T srcVal);
@@ -28,10 +28,10 @@ public:
 
     friend const T operator- <>(const T &left, const Decibel<T> &right);
 
-    bool operator <(const Decibel<T> & obj);
-    bool operator >(const Decibel<T> & obj);
+    bool operator <(const Decibel<T> & obj) const;
+    bool operator >(const Decibel<T> & obj) const;
 
-    double getVal() { return value; }
+    double getVal() const { return value; }
 
     Decibel & operator =(const Decibel &obj);
 //    Decibel & operator =(const  &val);
@@ -115,21 +115,21 @@ Decibel<T> & Decibel<T>::operator =(const Decibel<T> &obj){
 
 template<typename T>
 const T operator +(const T &left, const Decibel<T> &right){
-    return T((double)left * pow(10, 0.1 * right.value));
+    return T((double)left * pow(10, 0.05 * right.value));
 }
 
 template<typename T>
 const T operator -(const T &left, const Decibel<T> &right){
-    return T((double)left * pow(10, -0.1 * right.value));
+    return T((double)left * pow(10, -0.05 * right.value));
 }
 
 template<typename T>
-bool Decibel<T>::operator <(const Decibel<T> & obj){
+bool Decibel<T>::operator <(const Decibel<T> & obj) const{
     return value < obj.value;
 }
 
 template<typename T>
-bool Decibel<T>::operator >(const Decibel<T> & obj){
+bool Decibel<T>::operator >(const Decibel<T> & obj) const{
     return value > obj.value;
 }
 

@@ -10,7 +10,7 @@ int main() {
 
     first.overVoice(second, 0.2, 1.3, 0.4, -30, 15);
     first.mixWith(second);
-    first.save();
+    first.save("result.wav");
 
     return 0;
 }
